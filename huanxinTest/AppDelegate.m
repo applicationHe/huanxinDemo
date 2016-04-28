@@ -11,8 +11,10 @@
 #import "LoginViewController.h"
 #import <EMSDK.h>
 
-@interface AppDelegate ()
-
+@interface AppDelegate ()<EMContactManagerDelegate,UIAlertViewDelegate>
+{
+    NSString * _username;
+}
 @end
 
 @implementation AppDelegate
@@ -31,6 +33,8 @@
     manager.enableAutoToolbar = YES;
     EMOptions * options = [EMOptions optionsWithAppkey:@"hwm403#hwmtest"];
     [[EMClient sharedClient] initializeSDKWithOptions:options];
+    //注册好友回调
+    [[EMClient sharedClient].contactManager addDelegate:self delegateQueue:nil];
     return YES;
 }
 
@@ -53,7 +57,53 @@
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
+    [[EMClient sharedClient].contactManager removeDelegate:self];
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
+#pragma mark - EMContactManagerDelegate
+- (void)didReceiveFriendInvitationFromUsername:(NSString *)aUsername
+                                       message:(NSString *)aMessage
+{
+    _username = aUsername;
+    UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"%@想要添加你为好友(备注:%@)",aUsername,aMessage] delegate:self cancelButtonTitle:@"同意" otherButtonTitles:@"拒绝", nil];
+    alert.tag = 1;
+    [alert show];
+}
+/*!
+ @method
+ @brief 用户A发送加用户B为好友的申请，用户B同意后，用户A会收到这个回调
+ */
+- (void)didReceiveAgreedFromUsername:(NSString *)aUsername
+{
+    UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"%@同意添加你为好友",aUsername] delegate:self cancelButtonTitle:nil otherButtonTitles:@"确定", nil];
+    [alert show];
+}
 
+/*!
+ @method
+ @brief 用户A发送加用户B为好友的申请，用户B拒绝后，用户A会收到这个回调
+ */
+- (void)didReceiveDeclinedFromUsername:(NSString *)aUsername
+{
+    UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"提示" message:[NSString stringWithFormat:@"%@拒绝添加你为好友",aUsername] delegate:self cancelButtonTitle:nil otherButtonTitles:@"确定", nil];
+    [alert show];
+}
+#pragma mark - UIAlertViewDelegate
+-(void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    if (alertView.tag == 1) {
+        if (buttonIndex == 0) {
+            EMError *error = [[EMClient sharedClient].contactManager acceptInvitationForUsername:_username];
+            if (!error) {
+                NSLog(@"发送同意成功");
+            }
+        }else
+        {
+            EMError *error = [[EMClient sharedClient].contactManager declineInvitationForUsername:_username];
+            if (!error) {
+                NSLog(@"发送拒绝成功");
+            }
+        }
+    }
+}
 @end

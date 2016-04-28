@@ -8,6 +8,7 @@
 
 #import "LoginViewController.h"
 #import <EMSDK.h>
+#import "HBarController.h"
 
 @interface LoginViewController ()
 
@@ -25,10 +26,14 @@
     
 }
 - (IBAction)loginDidClicked:(id)sender {
-    EMError * error = [[EMClient sharedClient] registerWithUsername:self.usernameTF.text password:self.passwordTF.text];
+    EMError * error = [[EMClient sharedClient] loginWithUsername:self.usernameTF.text password:self.passwordTF.text];
     if (error) {
         UIAlertView * alert = [[UIAlertView alloc] initWithTitle:error.errorDescription message:nil delegate:self cancelButtonTitle:nil otherButtonTitles:@"确定", nil];
         [alert show];
+    }else
+    {
+        HBarController * barVC = [[UIStoryboard storyboardWithName:@"Main" bundle:nil] instantiateViewControllerWithIdentifier:@"HBar"];
+        [self presentViewController:barVC animated:NO completion:nil];
     }
 }
 
